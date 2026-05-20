@@ -154,7 +154,7 @@
   <header>
     <h1>Pressure Loss Calculator</h1>
     <p>Estimates dynamic pressure loss at a plantroom opening. Add multiple unit types with different suction rates and quantities.</p>
-    <div class="formula-pill"><strong>PL</strong> = ½ · ρ · V² &nbsp;|&nbsp; <strong>V</strong> = Q_total / A</div>
+    <div class="formula-pill"><strong>PL</strong> = ½ · ρ · V² &nbsp;|&nbsp; <strong>V</strong> = Q_total(m³/s) / A</div>
   </header>
 
   <!-- Step 1: How many unit types -->
@@ -219,7 +219,7 @@
       <div class="result-card">
         <div class="r-label">Total airflow (Q)</div>
         <div class="r-value" id="res-q">—</div>
-        <div class="r-unit">m³/s</div>
+        <div class="r-unit">m³/min</div>
       </div>
       <div class="result-card">
         <div class="r-label">Velocity (V = Q / A)</div>
@@ -239,7 +239,7 @@
   </div>
 
   <footer>
-    Tip: if suction values are in litres/second, divide by 1000 to convert to m³/s.<br>
+    Inputs are in m³/min — the calculator converts to m³/s automatically before applying the formula.<br>
     This calculates dynamic pressure loss only — apply a louvre/grille Cd factor separately if required.
   </footer>
 
@@ -277,8 +277,8 @@
         <div class="field-row">
           <div class="field">
             <label>Suction per unit</label>
-            <input class="q-input" type="number" placeholder="e.g. 0.5" min="0" step="any" value="${prev.q || ''}" />
-            <div class="unit-hint">m³/s per unit</div>
+            <input class="q-input" type="number" placeholder="e.g. 30" min="0" step="any" value="${prev.q || ''}" />
+            <div class="unit-hint">m³/min per unit</div>
           </div>
           <div class="field">
             <label>Number of units</label>
@@ -327,8 +327,9 @@
 
     warn.style.display = 'none';
 
-    const Qtotal = unitData.reduce((s, u) => s + u.subtotal, 0);
-    const V  = Qtotal / A;
+    const QtotalMin = unitData.reduce((s, u) => s + u.subtotal, 0);
+    const QtotalSec = QtotalMin / 60;
+    const V  = QtotalSec / A;
     const PL = 0.5 * rho * V * V;
 
     // Breakdown table
@@ -339,8 +340,8 @@
       tr.innerHTML = `
         <td>${u.name}</td>
         <td>${u.qty}</td>
-        <td>${u.q.toFixed(4)} m³/s</td>
-        <td>${u.subtotal.toFixed(4)} m³/s</td>
+        <td>${u.q.toFixed(2)} m³/min</td>
+        <td>${u.subtotal.toFixed(2)} m³/min</td>
       `;
       tbody.appendChild(tr);
     });
@@ -349,20 +350,21 @@
     totalTr.className = 'total-row';
     totalTr.innerHTML = `
       <td colspan="3">Total Q</td>
-      <td>${Qtotal.toFixed(4)} m³/s</td>
+      <td>${QtotalMin.toFixed(2)} m³/min</td>
     `;
     tbody.appendChild(totalTr);
 
-    document.getElementById('res-q').textContent  = Qtotal.toFixed(4);
+    document.getElementById('res-q').textContent  = QtotalMin.toFixed(2);
     document.getElementById('res-v').textContent  = V.toFixed(4);
     document.getElementById('res-pl').textContent = PL.toFixed(2);
 
     // Formula breakdown
     let formulaLines = unitData.map(u =>
-      `Q (${u.name}) = ${u.q.toFixed(4)} × ${u.qty} = <strong>${u.subtotal.toFixed(4)} m³/s</strong>`
+      `Q (${u.name}) = ${u.q.toFixed(2)} × ${u.qty} = <strong>${u.subtotal.toFixed(2)} m³/min</strong>`
     ).join('<br>');
-    formulaLines += `<br>Q_total &nbsp;= <strong>${Qtotal.toFixed(4)} m³/s</strong>`;
-    formulaLines += `<br>V &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${Qtotal.toFixed(4)} / ${A.toFixed(4)} = <strong>${V.toFixed(4)} m/s</strong>`;
+    formulaLines += `<br>Q_total &nbsp;= <strong>${QtotalMin.toFixed(2)} m³/min</strong>`;
+    formulaLines += `<br>Q_total &nbsp;= ${QtotalMin.toFixed(2)} ÷ 60 = <strong>${QtotalSec.toFixed(4)} m³/s</strong>`;
+    formulaLines += `<br>V &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${QtotalSec.toFixed(4)} / ${A.toFixed(4)} = <strong>${V.toFixed(4)} m/s</strong>`;
     formulaLines += `<br>PL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ½ × ${rho.toFixed(2)} × ${V.toFixed(4)}² = <strong>${PL.toFixed(2)} Pa</strong>`;
     document.getElementById('formula-breakdown').innerHTML = formulaLines;
 
